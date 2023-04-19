@@ -21,6 +21,7 @@ const openai = new OpenAIApi(configuration)
 const speech = require('@google-cloud/speech')
 const client = new speech.SpeechClient()
 
+//실제 api 구동 부
 app.get('/', async (req, res) => {
   const STTData = await STTFunction() // STT데이터를 받아옴
   console.log('받은 STT : ' + STTData)
@@ -33,30 +34,10 @@ app.get('/', async (req, res) => {
 /***********************함수 정의부****************************/
 
 /**
- *
- * @param {'GPT에 물어 볼 텍스트'} STTOutPut
- * @returns {'GPT에서 나온 답변을 텍스트화하여 출력'}
- */
-const GPTResponse = async (STTOutPut) => {
-  const response = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    messages: [
-      {
-        role: 'assistant',
-        content: STTOutPut,
-      },
-    ],
-  })
-  return response.data.choices[0].message.content
-}
-
-/**
  *@param {'구글 클라우드 파일의 원격 경로'} gcsUri
  * @returns {'STT후 나온 텍스트'}
  */
 const STTFunction = async (gcsUri = 'gs://ikhyeons/audio-files/녹음.mp3') => {
-  let transcription = ''
-
   const audio = {
     // 오디오 파일의 경로
     uri: gcsUri,
@@ -76,8 +57,26 @@ const STTFunction = async (gcsUri = 'gs://ikhyeons/audio-files/녹음.mp3') => {
   // 오디오 파일을 탐지함
   const [response] = await client.recognize(request) // 요청에 대한 탐지 결과 반납
 
-  transcription = response.results // 탐지 결과
-    .map((result) => result.alternatives[0])
+  // 탐지 결과
+  let transcription = response.results.map((result) => result.alternatives[0])
 
   return transcription[0].transcript
+}
+
+/**
+ *
+ * @param {'GPT에 물어 볼 텍스트'} STTOutPut
+ * @returns {'GPT에서 나온 답변을 텍스트화하여 출력'}
+ */
+const GPTResponse = async (STTOutPut) => {
+  const response = await openai.createChatCompletion({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      {
+        role: 'assistant',
+        content: STTOutPut,
+      },
+    ],
+  })
+  return response.data.choices[0].message.content
 }
