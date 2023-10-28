@@ -28,5 +28,5 @@ module.exports = sttFunction = async (fileName = "기본.mp3") => {
 
   // 탐지 결과
   let transcription = response.results.map((result) => result.alternatives[0]);
-  return transcription[0].transcript;
+  return transcription[0]?.transcript;
 };

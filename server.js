@@ -31,14 +31,19 @@ app.post("/", multer.single("file"), async (req, res) => {
   setTimeout(async () => {
     // 클라우드에 저장된 파일을 바로 못불러와서 1초 정도만 기다리기
     const STTData = await sttFunction(fileName); // 클라우드에서 STT데이터를 받아옴
-    console.log("받은 STT : " + STTData);
-    const returnFromGPT = await gptResponse(STTData + "? 짧은 길이로 대답해줘"); // STT데이터로 GPT에 요청하여 GPT응답을 받음
-    console.log("응답 : " + returnFromGPT);
-    // 받아온 텍스트로 TTS 요청 및 file 생성
-    await requestTTS(returnFromGPT);
-    res.sendFile(
-      "C:/Users/skant/OneDrive/Desktop/Projects/gptConnecter(졸작)/output/output.mp3"
-    );
+    if (!STTData) {
+      console.log("no description");
+      res.send({ result: 0 });
+    } else {
+      console.log("받은 STT : " + STTData);
+      const returnFromGPT = await gptResponse(STTData + "? 짧게 대답해줘"); // STT데이터로 GPT에 요청하여 GPT응답을 받음
+      console.log("응답 : " + returnFromGPT);
+      // 받아온 텍스트로 TTS 요청 및 file 생성
+      await requestTTS(returnFromGPT);
+      res.sendFile(
+        "C:/Users/skant/OneDrive/Desktop/Projects/gptConnecter(졸작)/output/output.mp3"
+      );
+    }
   }, 1000);
 });
 
