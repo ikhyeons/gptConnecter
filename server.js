@@ -1,3 +1,5 @@
+const cors = require("cors");
+
 const requestTTS = require("./sources/requestTTS");
 const sendMP3F = require("./sources/sendMP3F");
 const sttFunction = require("./sources/sttFunction");
@@ -23,6 +25,13 @@ const multer = Multer({
     fileSize: 30 * 1024 * 1024, // no larger than 5mb, you can change as needed.
   },
 });
+
+let corsOptions = {
+  origin: ["*"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 //실제 api 구동 부
 app.post("/", multer.single("file"), async (req, res) => {
