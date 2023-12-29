@@ -1,12 +1,12 @@
 // Google_Cloud 음성 라이브러리를 들고옴
-const speech = require("@google-cloud/speech");
+import speech from "@google-cloud/speech";
 const client = new speech.SpeechClient();
 
 /**
  *@param {'구글 클라우드 파일의 원격 경로'} gcsUri
  * @returns {'STT후 나온 텍스트'}
  */
-module.exports = sttFunction = async (fileName = "기본.mp3") => {
+export const sttFunction = async (fileName = "기본.mp3") => {
   const audio = {
     // 오디오 파일의 경로
     uri: `gs://ikhyeons/${fileName}`,
@@ -30,3 +30,4 @@ module.exports = sttFunction = async (fileName = "기본.mp3") => {
   let transcription = response.results.map((result) => result.alternatives[0]);
   return transcription[0]?.transcript;
 };
+export default sttFunction;

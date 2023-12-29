@@ -1,14 +1,14 @@
-const { Storage } = require("@google-cloud/storage");
+import { Storage } from "@google-cloud/storage";
+import { format } from "util";
 const gStorage = new Storage();
 const bucket = gStorage.bucket("ikhyeons");
-const { format } = require("util");
 
 /**
  *
  * @param {*} req request요청 객체
  * @returns Google Cloud에 저장된 파일의 오리지널네임을 반납
  */
-module.exports = sendMP3F = async (req) => {
+export const sendMP3F = async (req) => {
   // 파일의 오리지널 네임을 받아서 스트림을 작성함
   const blob = await bucket.file(req.file.originalname);
   const blobStream = await blob.createWriteStream({
@@ -29,3 +29,5 @@ module.exports = sendMP3F = async (req) => {
   await blobStream.end(req.file.buffer);
   return await blob.name;
 };
+
+export default sendMP3F;
