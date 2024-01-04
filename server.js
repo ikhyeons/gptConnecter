@@ -38,6 +38,8 @@ let corsOptions = {
 
 app.use(cors(corsOptions));
 
+app.use("/public", express.static("public"));
+
 //실제 api 구동 부
 app.post("/request", multer.single("file"), async (req, res) => {
   //req에서 받은 파일을 클라우드에 저장
