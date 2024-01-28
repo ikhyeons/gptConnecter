@@ -5,6 +5,9 @@ import sendMP3F from "./sources/sendMP3F.js";
 import sttFunction from "./sources/sttFunction.js";
 import gptResponse from "./sources/gptResponse.js";
 import jwt from "jsonwebtoken";
+import path from "path";
+
+const __dirname = path.resolve();
 //gptAPI Key
 import jwtKey from "./secrets/jwtKey.js";
 
@@ -15,7 +18,7 @@ import authMiddleware from "./middleware/authMiddleware.js";
 import express from "express";
 const app = express();
 const port = 2000;
-app.use(express.json());
+
 app.listen(port, () => {
   console.log(`server run in ${port}`);
 });
@@ -32,13 +35,18 @@ const multer = Multer({
 });
 
 let corsOptions = {
-  origin: ["*"],
+  origin: ["http://localhost:3000"],
   credentials: true,
 };
 
 app.use(cors(corsOptions));
-
 app.use("/public", express.static("public"));
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  console.log(__dirname + "/index.html");
+  res.sendFile(__dirname + "/index.html");
+});
 
 //실제 api 구동 부
 app.post("/request", multer.single("file"), async (req, res) => {
@@ -73,17 +81,23 @@ app.post("/request", multer.single("file"), async (req, res) => {
 
 //회원가입
 app.post("/join", async (req, res) => {
-  const { ma, password } = req.body;
-  const query = "INSERT INTO user VALUES(?, ?)";
-  const conn = await getConnection();
-  await conn.query(query, [ma, password]);
-  conn.release();
-  return res.send(0);
+  const { ma, pw } = req.body;
+  try {
+    const query = "INSERT INTO user VALUES(?, ?)";
+    const conn = await getConnection();
+    await conn.query(query, [ma, pw]);
+    conn.release();
+  } catch (err) {
+    console.log(err);
+    return res.status(503).send({ success: 0 });
+  }
+
+  return res.status(200).send({ success: 1 });
 });
 
 // 로그인
 app.post("/login", async (req, res) => {
-  const { ma, password } = req.body;
+  const { ma, pw } = req.body;
 
   const maQuery =
     "SELECT password, token FROM user LEFT JOIN rft ON rft.ma = user.ma WHERE user.ma = ?";
@@ -94,7 +108,7 @@ app.post("/login", async (req, res) => {
     return res.status(401).send({ code: 401, message: "ma not found" });
   }
   //password를 찾을 수 없을 시
-  if (getInfo[0].password !== password)
+  if (getInfo[0].password !== pw)
     return res.status(401).send({ code: 401, message: "pw not found" });
 
   //리프레시 토큰 생성
@@ -102,7 +116,7 @@ app.post("/login", async (req, res) => {
     {
       type: "JWT",
       ma: ma,
-      password: password,
+      password: pw,
     },
     jwtKey,
     {
@@ -114,12 +128,12 @@ app.post("/login", async (req, res) => {
   if (!getInfo[0].token) {
     //1. 만약 refreshToken이 없을 경우 토큰 생성
     //토큰생성
-    const tokenQuery = "INSERT INTO token VALUES(?, ?)";
+    const tokenQuery = "INSERT INTO rft VALUES(?, ?)";
     await conn.query(tokenQuery, [ma, rtoken]);
   } else {
     //2. 만약 refreshToken이 있을 경우 토큰 시간 갱신
     //토큰갱신
-    const tokenQuery = "UPDATE token SET token = ? where ma = ?";
+    const tokenQuery = "UPDATE rft SET token = ? where ma = ?";
     await conn.query(tokenQuery, [rtoken, ma]);
   }
 
@@ -127,7 +141,7 @@ app.post("/login", async (req, res) => {
   let token = jwt.sign(
     {
       type: "JWT",
-      password: password,
+      password: pw,
       ma: getInfo[0].ma,
     },
     jwtKey,
@@ -137,19 +151,11 @@ app.post("/login", async (req, res) => {
     }
   );
   conn.release();
-  return res
-    .status(200)
-    .cookie("token", token, { sameSite: "none", secure: true })
-    .cookie("ma", ma, {
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 30,
-      sameSite: "none",
-      secure: true,
-    })
-    .json({
-      code: 200,
-      token: token,
-    });
+  return res.status(200).json({
+    code: 200,
+    token: token,
+    ma: ma,
+  });
 });
 
 // 로그아웃
