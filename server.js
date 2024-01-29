@@ -44,7 +44,6 @@ app.use("/public", express.static("public"));
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  console.log(__dirname + "/index.html");
   res.sendFile(__dirname + "/index.html");
 });
 
@@ -53,7 +52,6 @@ app.post("/request", multer.single("file"), async (req, res) => {
   //req에서 받은 파일을 클라우드에 저장
   const fileName = await sendMP3F(req);
 
-  // 클라우드에 저장된 파일을 바로 못불러와서 1초 정도만 기다리기
   const STTData = await sttFunction(fileName); // 클라우드에서 STT데이터를 받아옴
   if (!STTData) {
     console.log("no description");
@@ -67,9 +65,10 @@ app.post("/request", multer.single("file"), async (req, res) => {
 
     const ma = req.body.ma;
     if (ma) {
+      const trimMa = ma.split("-")[4] + ma.split("-")[5];
       const query = "INSERT INTO qna VALUES(default, ?, ?, ?, default)";
       const conn = await getConnection();
-      await conn.query(query, [ma, STTData, returnFromGPT]);
+      await conn.query(query, [trimMa, STTData, returnFromGPT]);
       conn.release();
     }
 
@@ -98,7 +97,6 @@ app.post("/join", async (req, res) => {
 // 로그인
 app.post("/login", async (req, res) => {
   const { ma, pw } = req.body;
-
   const maQuery =
     "SELECT password, token FROM user LEFT JOIN rft ON rft.ma = user.ma WHERE user.ma = ?";
   const conn = await getConnection();
@@ -142,7 +140,7 @@ app.post("/login", async (req, res) => {
     {
       type: "JWT",
       password: pw,
-      ma: getInfo[0].ma,
+      ma: ma,
     },
     jwtKey,
     {
@@ -178,7 +176,8 @@ app.post("/logout", async (req, res) => {
 // 전체조회
 app.get("/list", authMiddleware, async (req, res) => {
   const conn = await getConnection();
-  const ma = req.decode.ma;
+  const ma = req.decoded.ma;
+  console.log("여기", ma);
   const listTokenQuery = "SELECT * FROM qna WHERE ma = ?";
   const [getInfo] = await conn.query(listTokenQuery, [ma]);
   conn.release();
