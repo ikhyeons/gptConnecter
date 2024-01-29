@@ -178,7 +178,7 @@ app.get("/list", authMiddleware, async (req, res) => {
   const conn = await getConnection();
   const ma = req.decoded.ma;
   console.log("여기", ma);
-  const listTokenQuery = "SELECT * FROM qna WHERE ma = ?";
+  const listTokenQuery = "SELECT * FROM qna WHERE ma = ? ORDER BY reqdate DESC";
   const [getInfo] = await conn.query(listTokenQuery, [ma]);
   conn.release();
   res.send(getInfo);
